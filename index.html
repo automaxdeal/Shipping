@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NOC SYSTEM</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Calibri:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+
+body{
+    background:#d1d5db;
+    font-family:'Calibri',sans-serif;
+}
+
+#pages{
+    padding:20px 0;
+}
+
+.line{
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+input{
+    width:100%;
+    min-width:0;
+}
+
+
+.wrapper{
+    display:flex;
+    gap:20px;
+}
+
+.panel{
+    width:380px;
+    background:#fff;
+    padding:15px;
+    border-radius:10px;
+    height:95vh;
+    overflow:auto;
+}
+
+input,select{
+    width:100%;
+    padding:10px;
+    margin-bottom:8px;
+    box-sizing:border-box;
+}
+
+.novi-select {
+    background:#059669;
+    color:white;
+    border:2px solid #047857;
+    font-weight:700;
+
+}
+.nedal-select{
+    background:#1f3b57;
+    color:white;
+    border:2px solid #10273b;
+    font-weight:700;
+}
+
+.soora-select{
+    background:#0f766e;
+    color:white;
+    border:2px solid #064e49;
+    font-weight:700;
+}
+
+.company-select{
+    background:#000;
+    color:white;
+    border:2px solid #333;
+    font-weight:700;
+}
+
+button{
+    width:100%;
+    padding:10px;
+    margin-top:5px;
+    border:none;
+    cursor:pointer;
+    font-weight:700;
+}
+
+.add{background:#1f3b57;color:#fff;}
+.generate{background:#000;color:#fff;}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:15px;
+}
+
+th,td{
+    border:1px solid #000;
+    padding:6px;
+    font-size:12px;
+    text-align:center;
+}
+
+#pages{
+    flex:1;
+    padding:20px 0;
+}
+
+.noc-page{
+    width:210mm;
+    min-height:297mm;
+
+    background:#fff;
+
+    padding-top:55mm;
+    padding-right:25mm;
+    padding-left:25mm;
+    padding-bottom:25mm;
+
+    position:relative;
+    margin:20px auto;
+
+    box-sizing:border-box;
+
+    page-break-after:always;
+
+    overflow:hidden;
+}
+
+.content{
+    font-size:18px;
+    line-height:2.2;
+
+    direction:rtl;
+    text-align:right;
+
+    width:100%;
+
+    position:relative;
+    z-index:1;
+}
+
+.title-left,
+.title-right{
+    text-align:center;
+    font-weight:700;
+    font-size:20px;
+    margin-bottom:35px;
+}
+
+.line{
+    margin:14px 0;
+}
+.line{margin:8px 0;}
+
+.title-right{
+    text-align:center;
+    font-weight:800;
+    color:#1f3b57;
+    font-size:18px;
+}
+
+.noc-page::before{
+    content:"";
+
+    position:absolute;
+
+    top:50%;
+    left:50%;
+
+    transform:translate(-50%,-50%);
+
+    width:400px;
+    height:400px;
+
+    background-image:var(--wm);
+    background-repeat:no-repeat;
+    background-position:center;
+    background-size:contain;
+
+    opacity:0.06;
+
+    z-index:0;
+
+    pointer-events:none;
+}
+.noc-page::before{
+    content:"";
+
+    position:absolute;
+
+    top:50%;
+    left:50%;
+
+    transform:translate(-50%,-50%);
+
+    width:400px;
+    height:400px;
+
+    background-image:var(--wm);
+    background-repeat:no-repeat;
+    background-position:center;
+    background-size:contain;
+
+    opacity:0.06;
+
+    z-index:0;
+
+    pointer-events:none;
+}</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+<div class="panel">
+
+<h2>Vehicle Entry</h2>
+
+<strong> <label>UPLOAD YOUR LETTER HEAD</label> </strong>
+<input type="file" id="letterheadUpload" accept="image/*">
+
+
+
+<select id="company" class="company-select" style="display:none;">
+<option value="novi">Company</option>
+</select>
+
+<select id="docType1" class="novi-select" style="display:none;">
+<option value="noc.novi">SHIPPING LETTER NOC</option>
+</select>
+
+
+<input id="manualDate" readonly style="display:none;">
+<input id="vehicle" placeholder="Vehicle">
+<input id="color" placeholder="Color">
+<input id="chassis" placeholder="Chassis">
+<input id="exp" placeholder="Transfer Place">
+
+<h3 style="margin-top:20px;color:#1f3b57;">
+Company Details
+</h3>
+
+<input id="companyName" placeholder="Your Company Name in Arabic">
+<input id="tra" placeholder="Customer Name in Arabic">
+
+
+
+<button class="add" onclick="addVehicle()">Add Vehicle</button>
+<button class="generate" onclick="generate()">Generate Documents</button>
+<button class="generate" onclick="printPages()">Print Documents</button>
+
+
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Vehicle</th>
+<th>Color</th>
+<th>Chassis</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="vehicleList"></tbody>
+</table>
+
+</div>
+
+<div id="pages"></div>
+
+</div>
+
+<script>
+
+let vehicles = [];
+let letterheadImage = "";
+
+document.getElementById("letterheadUpload").addEventListener("change", function (e) {
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function (event) {
+        letterheadImage = event.target.result;
+    };
+
+    reader.readAsDataURL(file);
+
+
+});
+
+function formatDate() {
+
+    const months = [
+        "January","February","March","April","May","June",
+        "July","August","September","October","November","December"
+    ];
+
+    const today = new Date();
+
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = months[today.getMonth()];
+    const year = today.getFullYear();
+
+    return `${day} ${month} ${year}`;
+}
+
+document.getElementById("manualDate").value = formatDate();
+
+
+const vehicle = document.getElementById("vehicle");
+const color = document.getElementById("color");
+const chassis = document.getElementById("chassis");
+const exp = document.getElementById("exp");
+const tra = document.getElementById("tra");
+const companyName = document.getElementById("companyName"); // ✅ ADD THIS
+
+
+const pages = document.getElementById("pages");
+
+function addVehicle(){
+
+    vehicles.push({
+        vehicle: vehicle.value,
+        color: color.value,
+        chassis: chassis.value,
+        name: companyName.value,
+        exp: exp.value,
+        tra: tra.value
+    });
+
+    render();
+
+    vehicle.value="";
+    color.value="";
+    chassis.value="";
+    companyName.value="";
+    exp.value="";
+    tra.value="";
+}
+
+function render(){
+
+let list=document.getElementById("vehicleList");
+
+list.innerHTML="";
+
+vehicles.forEach((v,i)=>{
+
+list.innerHTML+=`
+<tr>
+<td>${i+1}</td>
+<td>${v.vehicle}</td>
+<td>${v.color}</td>
+<td>${v.chassis}</td>
+<td><button onclick="del(${i})">X</button></td>
+</tr>
+`;
+
+});
+
+}
+
+function del(i){
+vehicles.splice(i,1);
+render();
+}
+
+function getDate(){
+
+    const months = [
+        "January","February","March","April","May","June",
+        "July","August","September","October","November","December"
+    ];
+
+    const today = new Date();
+
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = months[today.getMonth()];
+    const year = today.getFullYear();
+
+    return `${day} ${month} ${year}`;
+}
+function generate(){
+
+pages.innerHTML="";
+
+const type = document.getElementById("docType1").value;
+
+if (!type) {
+    alert("Select NOC type");
+    return;
+}
+
+const companyKey = document.getElementById("company").value;
+
+if(companyKey === ""){
+    alert("Select company");
+    return;
+}
+
+let company = companies[companyKey];
+
+vehicles.forEach(v=>{
+
+let body="";
+
+/* NEDAL ORIGINAL */
+
+ if(type==="noc.novi"){
+
+body=`
+<div class="line" style="text-align:left; direction:ltr;">
+Date : ${getDate()}
+</div>
+
+
+
+<div class="line"><br>
+<strong> السادة : هينة الطرق والموصلات ...............................المحترمين</strong>
+</br></div>
+
+<div class="line"><strong>
+تحية وبعد ........................
+</strong></div>
+<div class="line" style="text-align:center; font-weight:800; text-decoration:underline; font-size:20px;">
+الموضوع : تعهد
+</div>
+
+<div class="line" style="text-align:center;">
+● نحن شركة ${v.name} نتعهد بشحن السيارة التي  </div>
+
+<div class="line" style="text-align:center;">
+
+         تحمل ${v.tra} حتى ايصالها الى وجهتها
+
+</div>
+
+<div class="line" >
+ الى  :  ${v.exp}
+</div>
+
+<hr style="border:none; border-top:1px solid #000; margin:20px 0;">
+
+<div>
+<STRONG> <div class="line">
+أوصاف السيارة
+</STRONG></div>
+
+<div class="line">
+المركبة : ${v.vehicle}
+</div>
+
+<div class="line">
+لون المركبة : ${v.color}
+</div>
+<div class="line">
+القاعدة : ${v.chassis}
+</div> 
+<strong>
+<div class="line" style="text-align:right;">
+شاكرين لكم حسن تعاونكم معنا 
+</div>
+
+`;
+
+}
+
+pages.innerHTML += `
+<div class="noc-page" style="
+    background-image:url(${letterheadImage});
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+">
+    <img class="letterhead-bg" src="${letterheadImage}">
+        ${body}
+    </div>
+</div>
+`;
+
+});
+
+}
+
+
+async function downloadPDF(){
+
+const { jsPDF } = window.jspdf;
+
+const pdf = new jsPDF("p","mm","a4");
+
+const pagesList = document.querySelectorAll(".noc-page");
+
+for(let i=0;i<pagesList.length;i++){
+
+const canvas = await html2canvas(pagesList[i],{scale:2});
+
+const img = canvas.toDataURL("image/jpeg",1.0);
+
+const w = 210;
+const h = (canvas.height*w)/canvas.width;
+
+if(i>0) pdf.addPage();
+
+pdf.addImage(img,"JPEG",0,0,w,h);
+
+}
+
+pdf.save("NOC_DOCUMENTS.pdf");
+
+
+}
+
+/* 👇 ADD THIS BELOW IT */
+
+function printPages(){
+
+    const printWindow = window.open('', '', 'width=900,height=700');
+
+    const styles = document.querySelector("style").outerHTML;
+    const pagesContent = document.getElementById("pages").innerHTML;
+
+    printWindow.document.write(`
+    <html>
+    <head>
+    <title>Print NOC</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Calibri:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    ${styles}
+
+    <style>
+
+    @page{
+        size:A4;
+        margin:0;
+    }
+
+    body{
+        margin:0;
+        background:white;
+    }
+
+    #pages{
+        padding:0;
+    }
+
+    .noc-page{
+        margin:0 auto;
+        page-break-after:always;
+
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .noc-page:last-child{
+        page-break-after:auto;
+    }
+
+    </style>
+
+    </head>
+
+    <body onload="setTimeout(() => window.print(),500)">
+
+        <div id="pages">
+            ${pagesContent}
+        </div>
+
+    </body>
+    </html>
+    `);
+
+    printWindow.document.close();
+}
+</script>
+
+</body>
+</html>
